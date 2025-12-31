@@ -6,6 +6,7 @@ import 'profile/profile_page.dart';
 import 'home/feed_page.dart';
 import 'upload/upload_page.dart';
 import 'map/map_page.dart';
+import 'chat/chat_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,6 +55,7 @@ class _MainNavigationState extends State<MainNavigation> {
     FeedPage(),
     MapPage(),
     UploadPage(),
+    ChatPage(),
     ProfilePage(),
   ];
 
@@ -93,6 +95,11 @@ class _MainNavigationState extends State<MainNavigation> {
             icon: Icon(Icons.add_circle_outline),
             selectedIcon: Icon(Icons.add_circle),
             label: 'Upload',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.chat_bubble_outline),
+            selectedIcon: Icon(Icons.chat_bubble),
+            label: 'Chat',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),
