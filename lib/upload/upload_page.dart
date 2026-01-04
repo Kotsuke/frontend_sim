@@ -135,6 +135,7 @@ class _UploadPageState extends State<UploadPage> {
           children: [
             /// IMAGE PREVIEW
             GestureDetector(
+              key: const Key('upload_image_area'),
               onTap: _pickImage,
               child: Container(
                 height: 200,
@@ -174,6 +175,7 @@ class _UploadPageState extends State<UploadPage> {
 
             /// UPLOAD BUTTON
             ElevatedButton.icon(
+              key: const Key('upload_button'),
               onPressed: loading ? null : _upload,
               icon: loading
                   ? const SizedBox(

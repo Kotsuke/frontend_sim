@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'auth/login_page.dart';
@@ -7,6 +8,8 @@ import 'home/feed_page.dart';
 import 'upload/upload_page.dart';
 import 'map/map_page.dart';
 import 'chat/chat_page.dart';
+import 'core/rating_service.dart';
+import 'core/rating_dialog.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -63,10 +66,28 @@ class _MainNavigationState extends State<MainNavigation> {
   void initState() {
     super.initState();
     _requestPermissions();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndShowRating();
+    });
   }
 
+  Future<void> _checkAndShowRating() async {
+    if (await RatingService.shouldShowRating()) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => const RatingDialog(),
+        );
+      }
+    }
+  }
+
+
+
   Future<void> _requestPermissions() async {
-    await [Permission.location, Permission.camera, Permission.photos].request();
+    if (Platform.isAndroid || Platform.isIOS) {
+      await [Permission.location, Permission.camera, Permission.photos].request();
+    }
   }
 
   @override
