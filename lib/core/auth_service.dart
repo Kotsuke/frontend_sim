@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'api_config.dart';
+import 'navigation_service.dart';
+import '../auth/login_page.dart';
 
 class AuthService {
   static const String baseUrl = ApiConfig.baseUrl;
@@ -177,5 +180,38 @@ class AuthService {
   static Future<bool> isGoogleLogin() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('login_method') == 'google';
+  }
+
+  /// ================= AUTO LOGOUT (TOKEN EXPIRED) =================
+  /// Panggil fungsi ini jika response dari backend adalah 401 (Unauthorized)
+  static Future<void> forceLogout() async {
+    await logout();
+    
+    // Gunakan GlobalKey untuk navigasi tanpa context
+    final context = NavigationService.navigatorKey.currentState?.context;
+    if (context != null) {
+      // Pastikan mounting aman sebelum navigasi (opsional check mounted, tapi di static agak tricky)
+      NavigationService.navigatorKey.currentState?.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+        (route) => false,
+      );
+      
+      // Tampilkan Snack bar error
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sesi telah berakhir. Silakan login kembali.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// Helper untuk mengecek response secara otomatis
+  static Future<bool> checkTokenExpiration(http.Response response) async {
+    if (response.statusCode == 401) { 
+      await forceLogout(); 
+      return true; // Expired
+    }
+    return false; // Valid / Error lain
   }
 }

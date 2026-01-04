@@ -57,6 +57,9 @@ class PostService {
       body: jsonEncode({'type': type}),
     );
 
+    // Cek Token Expired
+    await AuthService.checkTokenExpiration(response);
+
     return response.statusCode == 200;
   }
 }

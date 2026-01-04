@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_config.dart';
+import 'auth_service.dart';
 
 class RatingService {
   static const String baseUrl = ApiConfig.baseUrl;
@@ -24,6 +25,8 @@ class RatingService {
           'comment': comment,
         }),
       );
+
+      await AuthService.checkTokenExpiration(response);
 
       return response.statusCode == 201;
     } catch (e) {

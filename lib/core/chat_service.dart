@@ -26,6 +26,11 @@ class ChatService {
       } else if (response.statusCode == 503) {
         throw Exception('Chatbot belum siap (Model loading/error).');
       } else {
+        // Cek apakah token expired (401)
+        if (await AuthService.checkTokenExpiration(response)) {
+          return "Session expired"; // Atau throw exception
+        }
+        
         final error = jsonDecode(response.body)['error'] ?? 'Terjadi kesalahan';
         throw Exception(error);
       }

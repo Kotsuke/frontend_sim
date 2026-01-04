@@ -33,6 +33,12 @@ class UploadService {
     request.files.add(await http.MultipartFile.fromPath('image', image.path));
 
     var response = await request.send();
+
+    if (response.statusCode == 401) {
+      await AuthService.forceLogout();
+      return false;
+    }
+    
     return response.statusCode == 200;
   }
 }
