@@ -23,7 +23,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late TextEditingController nameCtrl;
   late TextEditingController phoneCtrl;
   late TextEditingController bioCtrl;
+  late TextEditingController passwordCtrl;
   bool loading = false;
+  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -31,16 +33,23 @@ class _EditProfilePageState extends State<EditProfilePage> {
     nameCtrl = TextEditingController(text: widget.currentName);
     phoneCtrl = TextEditingController(text: widget.currentPhone);
     bioCtrl = TextEditingController(text: widget.currentBio);
+    passwordCtrl = TextEditingController();
   }
 
   Future<void> _saveProfile() async {
     setState(() => loading = true);
 
-    bool success = await UserService.updateProfile(widget.userId, {
+    final data = {
       'full_name': nameCtrl.text,
       'phone': phoneCtrl.text,
       'bio': bioCtrl.text,
-    });
+    };
+
+    if (passwordCtrl.text.isNotEmpty) {
+      data['password'] = passwordCtrl.text;
+    }
+
+    bool success = await UserService.updateProfile(widget.userId, data);
 
     setState(() => loading = false);
 
@@ -87,6 +96,26 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 border: OutlineInputBorder(),
               ),
               maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+             TextField(
+              controller: passwordCtrl,
+              obscureText: _obscurePassword,
+              decoration: InputDecoration(
+                labelText: 'New Password (Optional)',
+                hintText: 'Leave empty to keep current',
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
+                ),
+              ),
             ),
             const SizedBox(height: 24),
             SizedBox(
