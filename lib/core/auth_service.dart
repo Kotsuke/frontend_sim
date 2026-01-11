@@ -12,126 +12,97 @@ class AuthService {
   static const String baseUrl = ApiConfig.baseUrl;
 
   // ================= GOOGLE SIGN-IN INSTANCE =================
-  // Konfigurasi Google Sign-In
-  // Untuk Android: tidak perlu clientId (menggunakan SHA-1 dari Google Console)
-  // Untuk Web: tambahkan clientId jika diperlukan
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: [
-      'email',
-      'profile',
-    ],
+    scopes: ['email', 'profile'],
   );
 
-  /// ================= LOGIN (Username/Password) =================
+  /// ================= LOGIN USERNAME/PASSWORD =================
   static Future<bool> login(String username, String password) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/login'),
-      headers: ApiConfig.headers,
-      body: jsonEncode({'username': username, 'password': password}),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/login'),
+        headers: ApiConfig.headers,
+        body: jsonEncode({'username': username, 'password': password}),
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final prefs = await SharedPreferences.getInstance();
 
-      final prefs = await SharedPreferences.getInstance();
+        // SIMPAN JWT
+        final token = data['token'] as String?;
+        if (token != null) await prefs.setString('token', token);
 
-      // 🔐 SIMPAN JWT
-      prefs.setString('token', data['token']);
+        // DATA USER
+        final Map<String, dynamic> user = data['user'] ?? {};
+        if (user.containsKey('id')) await prefs.setInt('user_id', user['id']);
+        await prefs.setString('username', user['username'] ?? '');
+        await prefs.setString('full_name', user['full_name'] ?? '');
+        await prefs.setString('role', user['role'] ?? '');
+        if (user.containsKey('email')) await prefs.setString('email', user['email']);
+        if (user.containsKey('phone')) await prefs.setString('phone', user['phone']);
+        if (user.containsKey('bio')) await prefs.setString('bio', user['bio']);
 
-      // 🧑 DATA USER (OPSIONAL)
-      final user = data['user'];
-      if (user['id'] != null) await prefs.setInt('user_id', user['id']); // IMPORTANT
-      prefs.setString('username', user['username']);
-      prefs.setString('full_name', user['full_name']);
-      prefs.setString('role', user['role']);
-      if (user['email'] != null) prefs.setString('email', user['email']);
-      if (user['phone'] != null) prefs.setString('phone', user['phone']);
-      if (user['bio'] != null) prefs.setString('bio', user['bio']);
-
-      return true;
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Login Error: $e');
+      return false;
     }
-    return false;
   }
 
   /// ================= GOOGLE SIGN-IN =================
-  /// Login menggunakan akun Google
-  /// Return: Map dengan 'success' (bool) dan 'message' (String)
   static Future<Map<String, dynamic>> signInWithGoogle() async {
     try {
-      // 1. Trigger proses sign-in Google
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      final googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) return {'success': false, 'message': 'Login dibatalkan'};
 
-      // User membatalkan sign-in
-      if (googleUser == null) {
-        return {
-          'success': false,
-          'message': 'Login dibatalkan',
-        };
-      }
-
-      // 2. Ambil data dari Google account
-      final String email = googleUser.email;
-      final String name = googleUser.displayName ?? 'User';
-      final String googleId = googleUser.id;
-
-      // 3. Kirim data ke backend untuk diproses
       final response = await http.post(
         Uri.parse('$baseUrl/api/google-login'),
         headers: ApiConfig.headers,
         body: jsonEncode({
-          'email': email,
-          'name': name,
-          'google_id': googleId,
+          'email': googleUser.email,
+          'name': googleUser.displayName ?? 'User',
+          'google_id': googleUser.id,
         }),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-
         final prefs = await SharedPreferences.getInstance();
 
-        // 🔐 SIMPAN JWT
-        await prefs.setString('token', data['token']);
-        await prefs.setString('login_method', 'google'); // Tandai login via Google
+        // SIMPAN JWT & METODE LOGIN
+        final token = data['token'] as String?;
+        if (token != null) await prefs.setString('token', token);
+        await prefs.setString('login_method', 'google');
 
-        // 🧑 DATA USER
-        final user = data['user'];
-        if (user['id'] != null) await prefs.setInt('user_id', user['id']);
-        await prefs.setString('username', user['username']);
-        await prefs.setString('full_name', user['full_name']);
-        await prefs.setString('role', user['role']);
-        if (user['email'] != null) await prefs.setString('email', user['email']);
-        if (user['phone'] != null) await prefs.setString('phone', user['phone']);
-        if (user['bio'] != null) await prefs.setString('bio', user['bio']);
+        // DATA USER
+        final Map<String, dynamic> user = data['user'] ?? {};
+        if (user.containsKey('id')) await prefs.setInt('user_id', user['id']);
+        await prefs.setString('username', user['username'] ?? '');
+        await prefs.setString('full_name', user['full_name'] ?? '');
+        await prefs.setString('role', user['role'] ?? '');
+        if (user.containsKey('email')) await prefs.setString('email', user['email']);
+        if (user.containsKey('phone')) await prefs.setString('phone', user['phone']);
+        if (user.containsKey('bio')) await prefs.setString('bio', user['bio']);
 
-        return {
-          'success': true,
-          'message': 'Login berhasil',
-        };
+        return {'success': true, 'message': 'Login berhasil'};
       } else {
-        // Gagal dari backend
         final error = jsonDecode(response.body);
-        return {
-          'success': false,
-          'message': error['error'] ?? 'Terjadi kesalahan pada server',
-        };
+        return {'success': false, 'message': error['error'] ?? 'Terjadi kesalahan server'};
       }
     } catch (e) {
-      return {
-        'success': false,
-        'message': 'Error: ${e.toString()}',
-      };
+      debugPrint('Google Sign-In Error: $e');
+      return {'success': false, 'message': 'Error: $e'};
     }
   }
 
   /// ================= GOOGLE SIGN-OUT =================
-  /// Sign out dari Google (jika login via Google)
   static Future<void> signOutGoogle() async {
     try {
       await _googleSignIn.signOut();
-    } catch (e) {
-      // Abaikan error jika tidak login via Google
-    }
+    } catch (_) {}
   }
 
   /// ================= REGISTER =================
@@ -141,25 +112,27 @@ class AuthService {
     required String password,
     required String fullName,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/register'),
-      headers: ApiConfig.headers,
-      body: jsonEncode({
-        'username': username,
-        'email': email,
-        'password': password,
-        'full_name': fullName,
-      }),
-    );
-
-    return response.statusCode == 201;
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/register'),
+        headers: ApiConfig.headers,
+        body: jsonEncode({
+          'username': username,
+          'email': email,
+          'password': password,
+          'full_name': fullName,
+        }),
+      );
+      return response.statusCode == 201;
+    } catch (e) {
+      debugPrint('Register Error: $e');
+      return false;
+    }
   }
 
   /// ================= LOGOUT =================
   static Future<void> logout() async {
-    // Sign out dari Google juga jika login via Google
     await signOutGoogle();
-    
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
   }
@@ -176,27 +149,23 @@ class AuthService {
     return prefs.getString('token');
   }
 
-  /// ================= CHECK IF LOGGED IN VIA GOOGLE =================
+  /// ================= CHECK GOOGLE LOGIN =================
   static Future<bool> isGoogleLogin() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('login_method') == 'google';
   }
 
-  /// ================= AUTO LOGOUT (TOKEN EXPIRED) =================
-  /// Panggil fungsi ini jika response dari backend adalah 401 (Unauthorized)
+  /// ================= FORCE LOGOUT =================
   static Future<void> forceLogout() async {
     await logout();
-    
-    // Gunakan GlobalKey untuk navigasi tanpa context
+
     final context = NavigationService.navigatorKey.currentState?.context;
     if (context != null) {
-      // Pastikan mounting aman sebelum navigasi (opsional check mounted, tapi di static agak tricky)
       NavigationService.navigatorKey.currentState?.pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const LoginPage()),
         (route) => false,
       );
-      
-      // Tampilkan Snack bar error
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Sesi telah berakhir. Silakan login kembali.'),
@@ -206,12 +175,12 @@ class AuthService {
     }
   }
 
-  /// Helper untuk mengecek response secara otomatis
+  /// ================= CHECK TOKEN EXPIRATION =================
   static Future<bool> checkTokenExpiration(http.Response response) async {
-    if (response.statusCode == 401) { 
-      await forceLogout(); 
-      return true; // Expired
+    if (response.statusCode == 401) {
+      await forceLogout();
+      return true;
     }
-    return false; // Valid / Error lain
+    return false;
   }
 }

@@ -128,9 +128,26 @@ class _UploadPageState extends State<UploadPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Upload Laporan'), centerTitle: true),
+      appBar: AppBar(
+        title: const Align(
+              alignment: Alignment.topLeft,
+              child: Text(
+                'Upload Laporan',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                  color: Colors.white,
+                  shadows: [Shadow(color: Colors.black26, blurRadius: 2, offset: Offset(1, 1))],
+                ),
+              ),
+            ),
+        backgroundColor: Colors.blue.shade700,
+        centerTitle: true,
+        elevation: 4,
+        shadowColor: Colors.blue.shade200,
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             /// IMAGE PREVIEW
@@ -138,16 +155,33 @@ class _UploadPageState extends State<UploadPage> {
               key: const Key('upload_image_area'),
               onTap: _pickImage,
               child: Container(
-                height: 200,
+                height: 220,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.grey.shade200,
+                  border: Border.all(color: Colors.grey.shade400, width: 2),
+                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))],
+                  gradient: LinearGradient(
+                    colors: [Colors.grey.shade100, Colors.grey.shade300],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
                 ),
                 child: image == null
-                    ? const Center(child: Icon(Icons.camera_alt, size: 50))
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.camera_alt, size: 60, color: Colors.grey.shade600),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Tap untuk pilih gambar',
+                            style: TextStyle(color: Colors.grey.shade600, fontSize: 16, fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      )
                     : ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         child: Image.file(
                           image!,
                           fit: BoxFit.cover,
@@ -157,36 +191,67 @@ class _UploadPageState extends State<UploadPage> {
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
             /// ADDRESS
             if (address != null)
-              Row(
-                children: [
-                  const Icon(Icons.location_on, size: 18),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(address!, style: const TextStyle(fontSize: 12)),
-                  ),
-                ],
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.shade200, width: 1),
+                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.location_on, size: 20, color: Colors.blue.shade700),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        address!,
+                        style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
               ),
 
             const Spacer(),
 
             /// UPLOAD BUTTON
-            ElevatedButton.icon(
-              key: const Key('upload_button'),
-              onPressed: loading ? null : _upload,
-              icon: loading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.cloud_upload),
-              label: const Text('Upload'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 48),
+            Container(
+              width: double.infinity,
+              height: 56,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: loading ? [Colors.grey.shade400, Colors.grey.shade600] : [Colors.blue.shade600, Colors.blue.shade800],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: loading ? [] : [BoxShadow(color: Colors.blue.shade300, blurRadius: 8, offset: Offset(0, 4))],
+              ),
+              child: ElevatedButton.icon(
+                key: const Key('upload_button'),
+                onPressed: loading ? null : _upload,
+                icon: loading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.cloud_upload, color: Colors.white),
+                label: Text(
+                  loading ? 'Mengupload...' : 'Upload Laporan',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                ),
               ),
             ),
           ],
